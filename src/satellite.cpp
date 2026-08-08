@@ -3,22 +3,22 @@
 #include <cmath>
 
 
-Satellite::Satellite(Vector3 position, Vector3 velocity)
+Satellite::Satellite(Vec3 pos, Vec3 vel)
   : 
-  position(position), 
-  velocity(velocity)
+  pos(pos), 
+  vel(vel)
 {}
 
-void Satellite::update(double deltaTime)
+void Satellite::update(double dt)
 {
-  Vector3 oldAcceleration = calculateAcceleration();
-  position = position + velocity * deltaTime + oldAcceleration * (0.5 * deltaTime * deltaTime);
-  Vector3 newAcceleration = calculateAcceleration();
-  velocity = velocity + (oldAcceleration + newAcceleration) * (0.5 * deltaTime);
+  Vec3 oldAcclr = CalculateAcceleration();
+  pos = pos + vel * dt + oldAcclr * (0.5 * dt * dt);
+  Vec3 newAcclr = CalculateAcceleration();
+  vel = vel + (oldAcclr + newAcclr) * (0.5 * dt);
 }
 
-Vector3 Satellite::calculateAcceleration() const
+Vec3 Satellite::CalculateAcceleration() const
 {
-  double distance = position.magnitude();
-  return position * (-Earth::mu / std::pow(distance, 3));
+  double dist = pos.magnitude();
+  return pos * (-Earth::mu / std::pow(dist, 3));
 }

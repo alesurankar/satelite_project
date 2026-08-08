@@ -1,15 +1,15 @@
 #pragma once
-#include "math/vector.hpp"
+#include "math/vec3.hpp"
 
 
 class Satellite
 {
 public:
-  Satellite(Vector3 position, Vector3 velocity);
-  void update(double deltaTime);
+  Satellite(Vec3 pos, Vec3 vel);
+  void update(double dt);
 private:
-    Vector3 calculateAcceleration() const;
+    Vec3 CalculateAcceleration() const;
 public:
-  Vector3 position;
-  Vector3 velocity;
+  Vec3 pos;
+  Vec3 vel;
 };

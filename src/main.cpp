@@ -7,41 +7,31 @@
 int main()
 {
   constexpr double altitude = 500.0;
-  double orbitRadius = Earth::radius + altitude;
+  double orbRad = Earth::radius + altitude;
 
   // Initial position
-  Vector3 position{
-    orbitRadius,
-    0.0,
-    0.0
-  };
+  Vec3 pos{orbRad, 0.0, 0.0};
 
   // Circular orbit velocity
-  double orbitalVelocity =
-    std::sqrt(Earth::mu / orbitRadius);
+  double orbVel = std::sqrt(Earth::mu / orbRad);
+  Vec3 vel{0.0, orbVel, 0.0};
 
-  Vector3 velocity{
-    0.0,
-    orbitalVelocity,
-    0.0
-  };
-
-  Satellite satellite(position, velocity);
-  double deltaTime = 1.0; // 1 second
+  Satellite satellite(pos, vel);
+  double dt = 1.0; // 1 second
 
   for (int t = 0; t < 5700; ++t) {
-    satellite.update(deltaTime);
-    double distance = satellite.position.magnitude();
-    double currentAltitude = distance - Earth::radius;
+    satellite.update(dt);
+    double dist = satellite.pos.magnitude();
+    double currAltitude = dist - Earth::radius;
 
     std::cout
       << "t = " << t
       << " s | position = ("
-      << satellite.position.x << ", "
-      << satellite.position.y << ", "
-      << satellite.position.z << ")"
-      << " | distance = " << distance
-      << " km | altitude = " << currentAltitude
+      << satellite.pos.x << ", "
+      << satellite.pos.y << ", "
+      << satellite.pos.z << ")"
+      << " | distance = " << dist
+      << " km | altitude = " << currAltitude
       << " km"
       << '\n';
   }

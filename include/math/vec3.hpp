@@ -2,20 +2,20 @@
 #include <cmath>
 
 
-struct Vector3
+struct Vec3
 {
   double x;
   double y;
   double z;
 
-  Vector3(double x = 0.0, double y = 0.0, double z = 0.0)
+  Vec3(double x = 0.0, double y = 0.0, double z = 0.0)
     : 
     x(x), 
     y(y), 
     z(z)
   {}
 
-  Vector3 operator+(const Vector3& other) const
+  Vec3 operator+(const Vec3& other) const
   {
     return {
       x + other.x,
@@ -24,7 +24,7 @@ struct Vector3
     };
   }
 
-  Vector3 operator-(const Vector3& other) const
+  Vec3 operator-(const Vec3& other) const
   {
     return {
       x - other.x,
@@ -33,7 +33,7 @@ struct Vector3
     };
   }
 
-  Vector3 operator*(double scalar) const
+  Vec3 operator*(double scalar) const
   {
     return {
       x * scalar,
