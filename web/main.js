@@ -60,10 +60,13 @@ scene.add(satellite);
 
 // Simulation state
 let simulationTime = 0;
+let renderTime = 0;
 let satelliteSpeed = 0;
 let satelliteDistance = 0;
 let satelliteAltitude = 0;
 let connected = false;
+let previousState = null;
+let currentState = null;
 
 // UI
 const timeElement = document.getElementById("time");
@@ -98,18 +101,15 @@ socket.addEventListener(
       return;
     }
 
-    simulationTime = data.time;
-    satelliteSpeed = data.speed;
-    satelliteDistance = data.distance;
-    satelliteAltitude = data.altitude;
+    if (currentState === null) {
+      currentState = data;
+      renderTime = data.time;
+      return;
+    }
 
-    satellite.position.set(
-      data.position.x,
-      data.position.y,
-      data.position.z
-    );
-
-    updateUI();
+    previousState = currentState;
+    currentState = data;
+    renderTime = previousState.time;
   }
 );
 
@@ -173,6 +173,81 @@ resetButton.addEventListener(
   }
 );
 
+function updateSimulation(deltaTime) {
+  if (currentState === null) {
+    return;
+  }
+
+  if (previousState === null) {
+    satellite.position.set(
+      currentState.position.x,
+      currentState.position.y,
+      currentState.position.z
+    );
+    simulationTime = currentState.time;
+    satelliteSpeed = currentState.speed;
+    satelliteDistance = currentState.distance;
+    satelliteAltitude = currentState.altitude;
+    updateUI();
+    return;
+  }
+
+  renderTime += deltaTime;
+
+  const previousTime = previousState.time;
+  const currentTime = currentState.time;
+  const snapshotInterval = currentTime - previousTime;
+
+  if (snapshotInterval <= 0) {
+    return;
+  }
+
+  const interpolation =
+    (renderTime - previousTime) /
+    snapshotInterval;
+
+  const alpha = Math.max(
+    0,
+    Math.min(1, interpolation)
+  );
+
+  satellite.position.x =
+    previousState.position.x +
+    (currentState.position.x - previousState.position.x) *
+    alpha;
+
+  satellite.position.y =
+    previousState.position.y +
+    (currentState.position.y - previousState.position.y) *
+    alpha;
+
+  satellite.position.z =
+    previousState.position.z +
+    (currentState.position.z - previousState.position.z) *
+    alpha;
+
+  simulationTime =
+    previousTime +
+    snapshotInterval * alpha;
+
+  satelliteSpeed =
+    previousState.speed +
+    (currentState.speed - previousState.speed) *
+    alpha;
+
+  satelliteDistance =
+    previousState.distance +
+    (currentState.distance - previousState.distance) *
+    alpha;
+
+  satelliteAltitude =
+    previousState.altitude +
+    (currentState.altitude - previousState.altitude) *
+    alpha;
+
+  updateUI();
+}
+
 // Update UI
 function updateUI() {
   timeElement.textContent = `${simulationTime.toFixed(1)} s`;
@@ -181,9 +256,13 @@ function updateUI() {
   speedElement.textContent = `${satelliteSpeed.toFixed(5)} km/s`;
 }
 
+const clock = new THREE.Clock();
+
 // Animation loop
 function animate() {
   requestAnimationFrame(animate);
+  const deltaTime = clock.getDelta();
+  updateSimulation(deltaTime);
   controls.update();
   renderer.render(scene, camera);
 }
