@@ -32,7 +32,7 @@ int main()
   acceptor.accept(socket);
   std::cout << "Client connected!\n";
   websocket::stream<tcp::socket> ws(
-      std::move(socket)
+    std::move(socket)
   );
 
   ws.accept();
@@ -46,7 +46,7 @@ int main()
   const Vec3 vel{0.0, orbVel, 0.0};
 
   Satellite satellite(pos, vel);
-  constexpr double dt = 1.0;
+  constexpr double dt = 0.1;
 
   // Simulation
   const double orbitalPeriod =
@@ -56,10 +56,8 @@ int main()
       Earth::mu
     );
 
-  const int simulationTime =
-    static_cast<int>(
-      std::ceil(orbitalPeriod)
-    );
+  const int simulationTime = static_cast<int>(std::ceil(orbitalPeriod));
+  const int simulationSteps = static_cast<int>(std::ceil(orbitalPeriod / dt));
 
   std::cout << "\n=== Orbit parameters ===\n";
   std::cout << "Earth radius:     " << Earth::radius << " km\n";
@@ -69,33 +67,36 @@ int main()
   std::cout << "Orbital period:   " << orbitalPeriod << " s\n";
   std::cout << '\n';
 
+  // Send immutable simulation values once after the client connects.
+  const std::string parametersMessage =
+    "{"
+    "\"type\":\"simulation_parameters\","
+    "\"earthRadius\":" + std::to_string(Earth::radius) + ","
+    "\"altitude\":" + std::to_string(altitude) + ","
+    "\"orbitalRadius\":" + std::to_string(orbRad) + ","
+    "\"orbitalSpeed\":" + std::to_string(orbVel) + ","
+    "\"orbitalPeriod\":" + std::to_string(orbitalPeriod) + ","
+    "\"dt\":" + std::to_string(dt) + ","
+    "\"simulationTime\":" + std::to_string(simulationTime) +
+    "}";
+  ws.write(asio::buffer(parametersMessage));
+
   // Simulation loop
-  for (int t = 0; t < simulationTime; ++t)
-  {
+  for (int step  = 0; step  < simulationSteps; ++step ) {
     satellite.update(dt);
     const double dist = satellite.pos.magnitude();
     const double currAltitude = dist - Earth::radius;
     const double speed = satellite.vel.magnitude();
-
-    // Console output
-    std::cout
-      << "t = " << t
-      << " s | position = ("
-      << satellite.pos.x << ", "
-      << satellite.pos.y << ", "
-      << satellite.pos.z << ")"
-      << " | speed = " << speed
-      << " km/s"
-      << " | altitude = " << currAltitude
-      << " km"
-      << '\n';
 
     // JSON message
     std::string message =
       "{"
       "\"type\":\"satellite\","
       "\"id\":1,"
-      "\"time\":" + std::to_string(t) + ","
+      "\"time\":" + std::to_string((step + 1) * dt) + ","
+      "\"speed\":" + std::to_string(speed) + ","
+      "\"distance\":" + std::to_string(dist) + ","
+      "\"altitude\":" + std::to_string(currAltitude) + ","
       "\"position\":{"
         "\"x\":" + std::to_string(satellite.pos.x) + ","
         "\"y\":" + std::to_string(satellite.pos.y) + ","
@@ -115,7 +116,7 @@ int main()
 
     // Wait one second
     std::this_thread::sleep_for(
-      std::chrono::seconds(1)
+      std::chrono::milliseconds(100)
     );
   }
 

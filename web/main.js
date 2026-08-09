@@ -33,44 +33,24 @@ const sunLight = new THREE.DirectionalLight(0xffffff, 2);
 sunLight.position.set(5000, 3000, 5000);
 scene.add(sunLight);
 
+// Physical values are received from the C++ simulation.
+let earthRadius = 0;
+let orbitalRadius = 0;
+let orbitalPeriod = 0;
+
 // Earth
-// Real Earth radius is approximately 6371 km.
-// We use kilometers directly in the simulation.
-const EARTH_RADIUS = 6371;
-const earthGeometry = new THREE.SphereGeometry(EARTH_RADIUS, 64, 64);
+let earth = null;
+let orbit = null;
 const earthMaterial = new THREE.MeshStandardMaterial({
   color: 0x2855a3,
   roughness: 0.8,
   metalness: 0.0
 });
-const earth = new THREE.Mesh(earthGeometry, earthMaterial);
-scene.add(earth);
-
-// Orbit
-// Temporary visualization.
-// Later this can come from the C++ simulation.
-const ORBIT_ALTITUDE = 500;
-const ORBIT_RADIUS = EARTH_RADIUS + ORBIT_ALTITUDE;
-const orbitGeometry = new THREE.BufferGeometry();
-const orbitPoints = [];
-const segments = 256;
-
-for (let i = 0; i <= segments; i++) {
-  const angle = (i / segments) * Math.PI * 2;
-  const x = Math.cos(angle) * ORBIT_RADIUS;
-  const y = Math.sin(angle) * ORBIT_RADIUS;
-  orbitPoints.push(new THREE.Vector3(x, y, 0));
-}
-
-orbitGeometry.setFromPoints(orbitPoints);
 const orbitMaterial = new THREE.LineBasicMaterial({
-    color: 0xffffff,
-    transparent: true,
-    opacity: 0.35
-  });
-
-const orbit = new THREE.Line(orbitGeometry, orbitMaterial);
-scene.add(orbit);
+  color: 0xffffff,
+  transparent: true,
+  opacity: 0.35
+});
 
 // Satellite
 const satelliteGeometry = new THREE.SphereGeometry(60, 32, 32);
@@ -81,14 +61,9 @@ scene.add(satellite);
 // Simulation state
 let simulationTime = 0;
 let satelliteSpeed = 0;
+let satelliteDistance = 0;
+let satelliteAltitude = 0;
 let connected = false;
-
-// Initial position:
-// C++:
-// position = (6871, 0, 0)
-// Three.js:
-// same coordinate system
-satellite.position.set(ORBIT_RADIUS, 0, 0);
 
 // UI
 const timeElement = document.getElementById("time");
@@ -114,8 +89,19 @@ socket.addEventListener(
   "message", (event) => {
     const data = JSON.parse(event.data);
 
+    if (data.type === "simulation_parameters") {
+      initializeSimulation(data);
+      return;
+    }
+
+    if (data.type !== "satellite") {
+      return;
+    }
+
     simulationTime = data.time;
     satelliteSpeed = data.speed;
+    satelliteDistance = data.distance;
+    satelliteAltitude = data.altitude;
 
     satellite.position.set(
       data.position.x,
@@ -126,6 +112,33 @@ socket.addEventListener(
     updateUI();
   }
 );
+
+function initializeSimulation(parameters) {
+  earthRadius = parameters.earthRadius;
+  orbitalRadius = parameters.orbitalRadius;
+  orbitalPeriod = parameters.orbitalPeriod;
+
+  earth = new THREE.Mesh(
+    new THREE.SphereGeometry(earthRadius, 64, 64),
+    earthMaterial
+  );
+  scene.add(earth);
+
+  const orbitPoints = [];
+  for (let i = 0; i <= 256; i++) {
+    const angle = (i / 256) * Math.PI * 2;
+    orbitPoints.push(new THREE.Vector3(
+      Math.cos(angle) * orbitalRadius,
+      Math.sin(angle) * orbitalRadius,
+      0
+    ));
+  }
+
+  const orbitGeometry = new THREE.BufferGeometry();
+  orbitGeometry.setFromPoints(orbitPoints);
+  orbit = new THREE.Line(orbitGeometry, orbitMaterial);
+  scene.add(orbit);
+}
 
 socket.addEventListener(
   "error", (error) => {
@@ -162,25 +175,17 @@ resetButton.addEventListener(
 
 // Update UI
 function updateUI() {
-  const distance = satellite.position.length();
-  const altitude = distance - EARTH_RADIUS;
-
   timeElement.textContent = `${simulationTime.toFixed(1)} s`;
-  altitudeElement.textContent = `${altitude.toFixed(2)} km`;
-  distanceElement.textContent = `${distance.toFixed(2)} km`;
+  altitudeElement.textContent = `${satelliteAltitude.toFixed(2)} km`;
+  distanceElement.textContent = `${satelliteDistance.toFixed(2)} km`;
   speedElement.textContent = `${satelliteSpeed.toFixed(5)} km/s`;
 }
 
 // Animation loop
 function animate() {
   requestAnimationFrame(animate);
-
   controls.update();
-
-  renderer.render(
-    scene,
-    camera
-  );
+  renderer.render(scene, camera);
 }
 animate();
 
