@@ -10,8 +10,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(satellite_sim
-    src/main.cpp
-    src/satellite.cpp
+  src/main.cpp
+  src/satellite.cpp
 )
 
 target_include_directories(satellite_sim PRIVATE include)
