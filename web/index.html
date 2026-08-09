@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Satellite Simulation</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div id="app">
+    <header class="top-bar">
+      <h1>Satellite Simulation</h1>
+      <div class="status">
+        <span>Simulation</span>
+        <span id="simulation-status">Ready</span>
+      </div>
+    </header>
+
+    <main id="simulation-container"></main>
+
+    <aside class="info-panel">
+      <h2>Orbit Data</h2>
+      <div class="data-row">
+        <span>Time</span>
+        <span id="time">0 s</span>
+      </div>
+      <div class="data-row">
+        <span>Altitude</span>
+        <span id="altitude">500 km</span>
+      </div>
+      <div class="data-row">
+        <span>Speed</span>
+        <span id="speed">0 km/s</span>
+      </div>
+      <div class="data-row">
+        <span>Distance</span>
+        <span id="distance">6871 km</span>
+      </div>
+    </aside>
+
+    <div class="controls">
+      <button id="pause-button">Pause</button>
+      <button id="reset-button">Reset</button>
+    </div>
+  </div>
+  
+  <script type="module" src="main.js"></script>
+</body>
+</html>
